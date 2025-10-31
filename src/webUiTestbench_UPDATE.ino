@@ -1,4 +1,5 @@
 /*
+Test Bench Arduino - Servo, LCD, EEPROM, Menu, Buzzer, LED
 *ssid = "TestBench-AP";
 *password = "testbench123";
 */
@@ -57,7 +58,7 @@ XPT2046_Touchscreen ts(TOUCH_CS, TOUCH_IRQ);
 #define EEPROM_ADDR_S1_OPEN     18
 #define EEPROM_ADDR_S2_CLOSE    19
 #define EEPROM_ADDR_S2_OPEN     20
-#define EEPROM_ADDR_WIRELESS    21    // --- WIRELESS MOD ---
+#define EEPROM_ADDR_WIRELESS    21
 #define EEPROM_ADDR_S3_CLOSE    22
 #define EEPROM_ADDR_S3_OPEN     23
 #define EEPROM_ADDR_INPUT_SERVO 24    // 1 = servo1, 3 = servo3
@@ -135,7 +136,6 @@ const char* mainMenuItems[] = {"Test Bench", "Pengaturan"};
 int mainMenuIndex = 0;
 
 // --------- SETTINGS MENU NAMA ---------
-// Urutan baru sesuai permintaan:
 const char* settingsMenuItems[] = {
   "Test Servo",                   // 0 -> enterTestServoMenu()
   "Set Posisi Servo",             // 1 -> enterServoDegreeMenu()
@@ -170,7 +170,7 @@ unsigned long invalidSerialTime = 0;
 const unsigned long INVALID_SERIAL_DISPLAY = 2000;
 
 bool buzzerEnabled = true;
-bool wirelessEnabled = true; // --- WIRELESS MOD ---
+bool wirelessEnabled = true;
 
 // -------- VIRTUAL BUTTON --------
 #define BTN_Y 200
@@ -536,20 +536,20 @@ void resetEEPROMToDefault() {
   servoDegree[1][1] = 120;
   servoDegree[2][0] = 30;
   servoDegree[2][1] = 120;
-  wirelessEnabled = true; // --- WIRELESS MOD ---
+  wirelessEnabled = true;
   inputServo = 1;
   inputServoSpeedCloseMs = 500;
   inputServoSpeedOpenMs  = 500;
   saveParamsToEEPROM();
   saveBuzzerToEEPROM();
   saveServoDegreeToEEPROM();
-  saveWirelessToEEPROM(); // --- WIRELESS MOD ---
+  saveWirelessToEEPROM();
   saveInputServoToEEPROM();
   saveInputServoSpeedsToEEPROM();
 }
 
 // --------- WIRELESS AKTIF / NON-AKTIF ---------
-void applyWirelessStatus() {  // --- WIRELESS MOD ---
+void applyWirelessStatus() {
   if (wirelessEnabled) {
     if (WiFi.getMode() != WIFI_AP) {
       WiFi.mode(WIFI_AP);
@@ -750,7 +750,6 @@ void handleAPI() {
   });
 
   // --------- Test Servo Movement ---------
-  // id==1 => servo1 (tidak lagi tergantung inputServo)
   server.on("/testservo", HTTP_GET, [](AsyncWebServerRequest *request){
     int id = request->hasParam("id") ? request->getParam("id")->value().toInt() : 0;
     int pos = request->hasParam("pos") ? request->getParam("pos")->value().toInt() : 0;
@@ -859,7 +858,7 @@ void enterInputServoMenu() {
 }
 void enterInputServoSpeedMenu() {
   menuLevel = INPUT_SERVO_SPEED_MENU;
-  inputServoSpeedIndex = 0; // mulai pada CLOSE->OPEN
+  inputServoSpeedIndex = 0;
   inputServoSpeedEditing = false;
   inputServoSpeedCloseTmp = inputServoSpeedCloseMs;
   inputServoSpeedOpenTmp  = inputServoSpeedOpenMs;
@@ -1366,7 +1365,6 @@ void handleButtons() {
   // Menu konfirmasi reboot
   if (menuLevel == CONFIRM_REBOOT_MENU) {
     if (vBtnE) {
-      // set reboot flag, will be executed in main loop shortly
       rebootRequested = true;
       rebootAt = millis() + 200;
       infoSavedFlag = true;
@@ -1686,7 +1684,6 @@ void loop() {
   handleStateMachine();
   handleFlashing();
   handleBlinkBuzzer();
-  // always update input servo movement (non-blocking interpolation)
   handleInputServoMovement();
   updateDisplay();
 
