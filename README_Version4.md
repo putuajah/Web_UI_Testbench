@@ -238,4 +238,4 @@ Pada menu "Pengaturan" (index 0 = item teratas):
 
 ## Lisensi
 © 2025 — *Web UI Testbench Project by TAIZ - TIRTA MAJU JAYA CV*  
-[github.com/putuajah] https://github.com/putuajah/testbench_portable.git
+[github.com/putuajah] https://github.com/putuajah/testbench_portable_webUi.git
