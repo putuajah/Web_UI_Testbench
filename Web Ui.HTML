@@ -1,118 +1,607 @@
-<!DOCTYPE html><html><head>
+<!DOCTYPE html>
+<html>
+<head>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Test Bench Control</title>
 <style>
-body { font-family: Arial; background:#e9ecef; margin:0;}
-.container { max-width:420px;margin:30px auto;background:#fff;padding:24px;border-radius:12px;box-shadow:0 2px 8px #0001;}
-h2 {color:#0aa;}
-.label{font-weight:bold;}
-input[type=number]{width:70px;}
-.btn{padding:10px 18px;background:#0aa;color:#fff;border:none;border-radius:6px;cursor:pointer;margin:4px;}
-.btn-red{background:#d33;}
-.btn-blue{background:#0277bd;color:#fff;}
-.btn-orange{background:#ff6213;color:#fff}
-.btn-Orchid{background:#DA70D6;color:#fff}
+  /* Theme variables (light = default) */
+  :root{
+    --accent: #0aa;                 /* light accent for light mode */
+    --bg: #e9ecef;
+    --card: #fff;
+    --muted: #666;
+    --danger: #d33;
+    --ok: #07e0;
+    --text: #222;
+    --panel-bg: #fafafa;
+    --header-bg: #03B6;
+    --btn-text: #fff;
+    --input-bg: #fff;
+    --border: #eee;
+    --small-muted: #444;
+    --shadow: rgba(0,0,0,0.08);
+
+    /* toggle colors (use variables so we can override per theme) */
+    --switch-track: #0aa;
+    --switch-track-active: #0aa;
+    --switch-knob: #ffffff;
+  }
+
+  /* Dark theme override (Arduino IDE–like colors) */
+  .dark-theme{
+    --accent: #878A88;              /* cyan-blue accent similar to Arduino IDE */
+    --bg: #2b2b2b;                  /* editor background like many dark IDEs */
+    --card: #232526;                /* card/panel background */
+    --muted: #9aa6b2;
+    --danger: #ff6b6b;
+    --ok: #3be290;
+    --text: #e6eef2;
+    --panel-bg: #222426;            /* slightly lighter than card for separation */
+    --header-bg: #1b2730;
+    --btn-text: #0b1116;            /* darker text on bright accent */
+    --input-bg: #1b1d1f;
+    --border: #3b4040;
+    --small-muted: #a8bcc6;
+    --shadow: rgba(0,0,0,0.6);
+
+    /* switch / toggle colors for dark theme */
+    --switch-track: #25948E;        /* dark track */
+    --switch-track-active: #878A88; /* active track = cyan */
+    --switch-knob: #ffffff;         /* knob stays white for contrast */
+  }
+
+  body { font-family: Arial, Helvetica, sans-serif; background:var(--bg); margin:0; color:var(--text); -webkit-font-smoothing:antialiased; }
+  .container { max-width:920px; margin:14px auto; background:var(--card); padding:12px; border-radius:10px; box-shadow:0 2px 10px var(--shadow); }
+  h1 { margin:6px 0 12px 0; color:var(--accent); font-size:20px; }
+
+  .top-row { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; flex:1; }
+  .tab-btn { flex:1; padding:8px 12px; background:var(--panel-bg); border-radius:8px; border:1px solid var(--border); cursor:pointer; text-align:center; font-weight:600; color:var(--accent); }
+  .tab-btn.active { background:var(--accent); color:var(--btn-text); box-shadow:0 2px 8px rgba(0,0,0,0.06); }
+
+  .panel { display:none; padding:8px 2px 0 2px; }
+  .panel.active { display:block; }
+
+  .row { display:flex; gap:12px; align-items:center; margin-bottom:8px; flex-wrap:wrap; }
+  .card { background:var(--panel-bg); border-radius:8px; padding:10px; border:1px solid var(--border); min-width:160px; flex:1; box-sizing:border-box; color:var(--text); }
+  .card.large { flex:2; }
+  .label { font-size:12px; color:var(--muted); }
+  .value { font-size:18px; font-weight:700; margin-top:6px; color:var(--text); }
+  .btn{ padding:8px 12px; border-radius:8px; border:none; background:var(--accent); color:var(--btn-text); cursor:pointer; margin-right:6px; }
+  .btn.secondary { background:#777; color:#fff; }
+  .btn.danger { background:var(--danger); color:#fff; }
+  input[type=number], input[type=text], select { padding:6px 8px; border:1px solid var(--border); border-radius:6px; width:110px; background:var(--input-bg); color:var(--text); }
+  form .row { align-items:center; }
+  .small { font-size:12px; color:var(--small-muted); }
+  hr { border:0; border-top:1px solid var(--border); margin:8px 0; }
+  .foot { font-size:12px; color:var(--small-muted); text-align:right; margin-top:6px; }
+  pre { background:#111; color:#0f0; padding:8px; border-radius:6px; overflow:auto; max-height:140px; }
+
+  @media(max-width:520px){ .row { flex-direction:column; align-items:stretch; } input[type=number], select { width:100%; } }
+
+  .small-label { font-size:12px; color:var(--small-muted); vertical-align:middle; display:inline-block; margin-right:8px; line-height:1.4; }
+
+  .field { display:flex; align-items:center; gap:8px; }
+  .field .label-inline { min-width:80px; font-size:12px; color:var(--muted); }
+  .field input[type="number"] { width:120px; padding:6px 8px; border-radius:6px; border:1px solid var(--border); background:var(--input-bg); color:var(--text); }
+  .controls { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; align-items:center; }
+  .controls .btn { min-width:88px; padding:8px 12px; }
+
+  /* system card small rows */
+  .sys-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:6px; }
+  .sys-kv { min-width:120px; color:var(--text); font-weight:600; }
+  .sys-val { color:var(--text); font-weight:700; }
+
+  /* Theme toggle inside system card - now uses variables for colors */
+  .theme-inline { display:flex; align-items:center; gap:10px; margin-left:auto; }
+  .theme-label { font-size:13px; color:var(--muted); cursor:pointer; min-width:90px; text-align:right; }
+  .switch { width:48px; height:28px; background:var(--switch-track); border-radius:16px; border:1px solid var(--border); position:relative; cursor:pointer; display:inline-block; }
+  .knob { width:22px; height:22px; background:var(--switch-knob); border-radius:50%; position:absolute; top:3px; left:3px; transition:left .18s, background .18s; box-shadow:0 1px 3px rgba(0,0,0,0.2); }
+  .switch[aria-checked="true"] { background: var(--switch-track-active); border-color: var(--switch-track-active); }
+  .switch[aria-checked="true"] .knob { left:25px; }
+  .switch:focus { outline:2px solid rgba(0,0,0,0.12); outline-offset:2px; }
+
 </style>
 </head>
 <body>
-<div class="container">
-<h2>Test Bench Control</h2>
-<div>
-  <div class="label">Status Mesin: <span id="state"></span></div>
-  <div>
-    <button class="btn btn-orange" onclick="aksi('A1')">Persiapan Kliring</button>
-    <button class="btn btn-orange" onclick="aksi('A2')">Proses Kliring</button>
-    <button class="btn" onclick="aksi('B1')">Persiapan Kalibrasi</button>
-    <button class="btn" onclick="aksi('B2')">Proses Kalibrasi</button>
-    <button class="btn btn-blue" onclick="aksi('S')">Siap Uji</button>
+<div class="container" id="app">
+  <div class="top-row">
+    <h1 style="margin:0; flex:1;">Test Bench Control</h1>
+    <!-- Removed top theme toggle: now inside Settings -> Sistem card -->
   </div>
-</div>
-<hr>
-<form onsubmit="return kirimData();">
-  <div class="label">Set Durasi (detik):</div>
-  KLIRING <input id="kliring" type="number" min="1" value="10"><br>
-  TUNGGU <input id="tunggu" type="number" min="1" value="5"><br>
-  KALIBRASI <input id="kalibrasi" type="number" min="1" value="30"><br>
-  STABIL <input id="stabil" type="number" min="1" value="10"><br>
-  <button class="btn" type="submit">Simpan</button>
-</form>
-<hr>
-<div>
-  <div class="label">Buzzer: <span id="buzzer"></span>
-    <button class="btn" onclick="toggleBuzzer()">Toggle</button>
+
+  <div class="tabs">
+    <div class="tab-btn active" data-tab="main">Utama</div>
+    <div class="tab-btn" data-tab="control">Kontrol</div>
+    <div class="tab-btn" data-tab="settings">Pengaturan</div>
+    <div class="tab-btn" data-tab="cal">Sensor</div>
+    <div class="tab-btn" data-tab="test">Test Servo</div>
   </div>
-</div>
-<hr>
-<div>
-  <div class="label">Wireless: <span id="wireless"></span>
-    <button class="btn" onclick="toggleWireless()">Toggle</button>
+
+  <!-- MAIN TAB -->
+  <div id="main" class="panel active">
+    <div class="row">
+      <div class="card large">
+        <div class="label">Status Mesin</div>
+        <div id="state" class="value">--</div>
+        <div id="state_time" class="small">--</div>
+        <div class="small"></div>
+      </div>
+
+      <div class="card">
+        <div class="label">Suhu Air (&deg;C)</div>
+        <div id="temp" class="value">--</div>
+        <div class="small"></div>
+      </div>
+
+      <div class="card">
+        <div class="label">Debit Air (L/jam)</div>
+        <div id="flow" class="value">--</div>
+        <div class="small"></div>
+      </div>
+
+      <div class="card">
+        <div class="label">Volume (L)</div>
+        <div id="volume" class="value">--</div>
+        <div class="small"></div>
+      </div>
+    </div>
+
+    <div class="row">
+      <button class="btn" onclick="ambil()">Refresh</button>
+      <button class="btn secondary" onclick="ambilSensors()">Refresh Sensors</button>
+      <button class="btn danger" onclick="resetVolume()">Reset Volume</button>
+      <div style="flex:1"></div>
+      <div class="small">Realtime update: setiap <span id="pollInterval">500</span> ms</div>
+    </div>
+    <hr>
   </div>
+
+  <!-- CONTROL TAB -->
+  <div id="control" class="panel">
+    <div class="row">
+      <button class="btn" onclick="aksi('A1')">Persiapan Kliring</button>
+      <button class="btn" onclick="aksi('A2')">Proses Kliring</button>
+      <button class="btn" onclick="aksi('A3')">Tunggu Proses</button>
+      <button class="btn" onclick="aksi('B1')">Persiapan Kalibrasi</button>
+      <button class="btn" onclick="aksi('B2')">Proses Kalibrasi</button>
+      <button class="btn" onclick="aksi('B3')">Tunggu Stabil</button>
+      <button class="btn secondary" onclick="aksi('S')">Siap Uji</button>
+    </div>
+
+    <hr>
+    <div class="row">
+      <div class="card">
+        <div class="label">Buzzer</div>
+        <div class="small">Status: <span id="buzzer">--</span></div>
+        <div style="margin-top:8px;">
+          <button class="btn" onclick="toggleBuzzer()">Toggle Buzzer</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Wireless</div>
+        <div class="small">Status: <span id="wireless">--</span></div>
+        <div style="margin-top:8px;">
+          <button class="btn" onclick="toggleWireless()">Toggle Wireless</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS TAB -->
+  <div id="settings" class="panel">
+    <form onsubmit="return kirimData();" style="width:100%;">
+      <div class="row">
+        <div class="card large">
+          <div class="label">Atur Durasi Pengujian (detik)</div>
+          <div style="margin-top:8px;">
+            <div class="row" style="align-items:flex-start;">
+              <div class="field">
+                <span class="label-inline">KLIRING</span>
+                <input id="kliring" type="number" min="1" value="10">
+              </div>
+              <div class="field">
+                <span class="label-inline">TUNGGU</span>
+                <input id="tunggu" type="number" min="1" value="5">
+              </div>
+              <div class="field">
+                <span class="label-inline">KALIBRASI</span>
+                <input id="kalibrasi" type="number" min="1" value="30">
+              </div>
+              <div class="field">
+                <span class="label-inline">STABIL</span>
+                <input id="stabil" type="number" min="1" value="10">
+              </div>
+            </div>
+
+            <div style="margin-top:12px;">
+              <button class="btn" type="submit">Simpan Durasi</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <hr>
+    <div class="row">
+      <div class="card">
+        <div class="label">Pilih Servo Input</div>
+        <div style="margin-top:8px;">
+        <select id="inputServoSelect">
+          <option value="1">Servo 1</option>
+          <option value="3">Servo 3</option>
+        </select>
+        <div style="margin-top:8px;"><button class="btn" onclick="setInputServo()">Set</button></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Kecepatan Servo Input (detik)</div>
+        <div style="margin-top:8px;">
+        <div class="small" style="margin-top:6px;">
+          <span class="small-label">CLOSE &rarr; OPEN</span>
+          <input id="inputSpeedClose" type="number" min="0.2" max="5" step="0.1"><br>
+          <span class="small-label">OPEN &rarr; CLOSE</span>
+          <input id="inputSpeedOpen" type="number" min="0.2" max="5" step="0.1">
+        </div>
+        <div style="margin-top:8px;"><button class="btn" onclick="setInputServoSpeed()">Simpan Kecepatan</button></div>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+    <div class="row">
+      <div class="card">
+        <div class="label">Set Sudut Servo (0&deg;-180&deg;)  *Default: CLOSE 30&deg; - OPEN 120&deg;</div>
+        <div style="margin-top:8px">
+        <span class="small-label">
+          S1 CLOSE <input id="s1c" type="number" min="0" max="180"> S1 OPEN <input id="s1o" type="number" min="0" max="180"><br>
+          S2 CLOSE <input id="s2c" type="number" min="0" max="180"> S2 OPEN <input id="s2o" type="number" min="0" max="180"><br>
+          S3 CLOSE <input id="s3c" type="number" min="0" max="180"> S3 OPEN <input id="s3o" type="number" min="0" max="180">
+        </div>
+        <div style="margin-top:8px;"><button class="btn" onclick="setServo()">Simpan Servo</button></div>
+      </div>
+    </div>
+
+    <hr>
+    <!-- System card (now includes Theme toggle) -->
+    <div class="row">
+      <div class="card large">
+        <div class="label">Sistem</div>
+
+        <!-- Theme toggle row inside system card -->
+        <div class="sys-row" style="margin-top:8px; align-items:center;">
+          <div class="small">Tema :</div>
+          <div class="theme-inline" style="margin-left:0px;">
+            <div class="theme-label" id="sys_theme_label">Mode: Terang</div>
+            <div id="sys_theme_switch" class="switch" role="switch" aria-checked="false" tabindex="0" aria-label="Toggle theme">
+              <div class="knob" aria-hidden="true"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sys-row" style="margin-top:22px;">
+          <button class="btn danger" onclick="confirmResetEEPROM()">Reset EEPROM</button>
+          <button class="btn secondary" onclick="confirmReboot()">Reboot System</button>
+          <div style="flex:1"></div>
+        </div>
+
+        <div class="small" style="margin-top:8px; color:var(--small-muted);">
+          Reset EEPROM akan mengembalikan semua pengaturan ke default. Reboot system akan melakukan restart perangkat.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- CALIBRATION TAB -->
+  <div id="cal" class="panel">
+   <div class="row">
+     <div class="card">
+       <div class="label">Temp Offset (&deg;C)</div>
+       <div style="margin-top:8px;">
+       <input id="tempOffset" type="number" step="0.1" min="-10" max="10">
+       <div style="margin-top:8px;"><button class="btn" onclick="calTemp()">Simpan Offset</button></div>
+       </div>
+     </div>
+     <div class="card">
+       <div class="label">Flow pulses/L</div>
+       <div style="margin-top:8px;">
+       <input id="flowPPL" type="number" step="1" min="1">
+       <div style="margin-top:8px;"><button class="btn" onclick="calFlow()">Simpan Flow</button></div>
+       </div>
+     </div>
+   </div>
+
+   <hr>
+   <div class="row">
+     <div class="card">
+       <div class="label">Volume (L)</div>
+       <div style="margin-top:8px;">
+       <div id="volume_cal" class="value">--</div>
+       
+       <div style="margin-top:16px;">
+         <div style="margin-top:4px;"><button class="btn danger" onclick="resetVolume()">Reset Volume</button></div>
+         </div>
+       </div>
+       
+     </div>
+   </div>
+ </div>
+ 
+  <!-- TEST SERVO TAB -->
+  <div id="test" class="panel">
+    <div class="row">
+      <div class="card">
+        <div class="label">Test Servo 1</div>
+        <div class="small">
+          <div class="controls">
+            <button class="btn" onclick="testServo(1,'c')">S1 CLOSE</button>
+            <button class="btn" onclick="testServo(1,'o')">S1 OPEN</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Test Servo 2</div>
+        <div class="small">
+          <div class="controls">
+            <button class="btn" onclick="testServo(2,'c')">S2 CLOSE</button>
+            <button class="btn" onclick="testServo(2,'o')">S2 OPEN</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="label">Test Servo 3</div>
+        <div class="small">
+          <div class="controls">
+            <button class="btn" onclick="testServo(3,'c')">S3 CLOSE</button>
+            <button class="btn" onclick="testServo(3,'o')">S3 OPEN</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">Web UI v1.2.OTA - Realtime <span id="pollIntervalFoot">500</span> ms. *Author Project by Taiz</div>
 </div>
-<hr>
-<div>
-  <div class="label">Pilih Servo Input Aktif:</div>
-  <select id="inputServoSelect">
-    <option value="1">Servo 1</option>
-    <option value="3">Servo 3</option>
-  </select>
-  <button class="btn" onclick="setInputServo()">Set</button>
-  <div style="margin-top:6px">Aktif: <span id="activeServo"></span></div>
-</div>
-<hr>
-<div>
-  <div class="label">Set Sudut Servo:</div>
-  S1 CLOSE <input id="s1c" type="number" min="0" max="180">
-  S1 OPEN <input id="s1o" type="number" min="0" max="180"><br>
-  S2 CLOSE <input id="s2c" type="number" min="0" max="180">
-  S2 OPEN <input id="s2o" type="number" min="0" max="180"><br>
-  S3 CLOSE <input id="s3c" type="number" min="0" max="180">
-  S3 OPEN <input id="s3o" type="number" min="0" max="180"><br>
-  <button class="btn" onclick="setServo()">Simpan Servo</button>
-</div>
-<hr>
-<div>
-  <div class="label">Test Servo:</div>
-  <!-- Web UI updated: explicit Servo1 (S1) buttons (tidak bergantung pada inputServo) -->
-  <button class="btn btn-orange" onclick="testServo(1,document.getElementById('s1c').value)">S1 CLOSE</button>
-  <button class="btn btn-orange" onclick="testServo(1,document.getElementById('s1o').value)">S1 OPEN</button>
-  <button class="btn" onclick="testServo(2,document.getElementById('s2c').value)">S2 CLOSE</button>
-  <button class="btn" onclick="testServo(2,document.getElementById('s2o').value)">S2 OPEN</button>
-  <button class="btn btn-Orchid" onclick="testServo(3,document.getElementById('s3c').value)">S3 CLOSE</button>
-  <button class="btn btn-Orchid" onclick="testServo(3,document.getElementById('s3o').value)">S3 OPEN</button>
-  <button class="btn btn-blue" onclick="masukTestServoMenu()">Masuk Pengaturan Test Servo</button>
-</div>
-<hr>
-<div>
-  <div class="label">Kecepatan Servo Input (detik):</div>
-  CLOSE -> OPEN <input id="inputSpeedClose" type="number" min="0.2" max="5" step="0.1">
-  OPEN -> CLOSE <input id="inputSpeedOpen" type="number" min="0.2" max="5" step="0.1">
-  <button class="btn" onclick="setInputServoSpeed()">Simpan Kecepatan</button>
-</div>
-<hr>
-<div>
-  <div class="label">Reset EEPROM:</div>
-  <button class="btn btn-red" onclick="resetEEPROM()">RESET SELURUH DATA</button>
-  <button class="btn btn-red" style="background:#555;margin-left:8px" onclick="rebootDevice()">REBOOT DEVICE</button>
-</div>
+
 <script>
-function ambil() {
-  fetch('/info').then(r=>r.json()).then(d=>{
-    document.getElementById('state').innerText = d.state;
-    document.getElementById('kliring').value = d.KLIRING;
-    document.getElementById('tunggu').value = d.TUNGGU;
-    document.getElementById('kalibrasi').value = d.KALIBRASI;
-    document.getElementById('stabil').value = d.STABIL;
+/* Tab handling */
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=> {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Polling interval (ms)
+const POLL_MS = 500;
+document.getElementById('pollInterval').innerText = POLL_MS;
+document.getElementById('pollIntervalFoot').innerText = POLL_MS;
+
+/* Theme handling placed in Settings -> Sistem card
+   Uses localStorage key 'tb_theme' ('light'|'dark').
+   Switch element: #sys_theme_switch, label: #sys_theme_label
+*/
+const THEME_KEY = 'tb_theme';
+const themeSwitch = document.getElementById('sys_theme_switch');
+const themeLabel = document.getElementById('sys_theme_label');
+
+function applyTheme(theme) {
+  if (theme === 'dark') {
+    document.documentElement.classList.add('dark-theme');
+    themeSwitch.setAttribute('aria-checked','true');
+    themeLabel.innerText = 'Mode Gelap';
+  } else {
+    document.documentElement.classList.remove('dark-theme');
+    themeSwitch.setAttribute('aria-checked','false');
+    themeLabel.innerText = 'Mode Terang';
+  }
+  try { localStorage.setItem(THEME_KEY, theme); } catch(e) {}
+}
+
+function getPreferredTheme() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) return saved;
+  } catch(e) {}
+  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  return prefersDark ? 'dark' : 'light';
+}
+
+function toggleTheme() {
+  const current = (themeSwitch.getAttribute('aria-checked') === 'true') ? 'dark' : 'light';
+  const next = (current === 'dark') ? 'light' : 'dark';
+  applyTheme(next);
+}
+
+// Initialize theme on load
+applyTheme(getPreferredTheme());
+
+// Make switch & label interactive (click/touch/keyboard)
+themeSwitch.addEventListener('click', (e)=>{ e.preventDefault(); toggleTheme(); });
+themeSwitch.addEventListener('keydown', (e)=>{ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleTheme(); } });
+themeSwitch.addEventListener('touchstart', (e)=>{ e.preventDefault(); toggleTheme(); }, {passive:false});
+themeLabel.addEventListener('click', (e)=>{ e.preventDefault(); toggleTheme(); });
+
+/* --- avoid overwriting inputs while user edits ---
+   Track editing state for duration and speed inputs so ambil()
+   will not overwrite values being typed.
+*/
+const durationIds = ['kliring','tunggu','kalibrasi','stabil'];
+const editableIds = ['inputSpeedClose','inputSpeedOpen','tempOffset','flowPPL','inputServoSelect'];
+const editing = {};
+[...durationIds, ...editableIds].forEach(id => editing[id] = false);
+
+function attachEditingHandlers() {
+  [...durationIds, ...editableIds].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('focus', () => { editing[id] = true; });
+    el.addEventListener('input', () => { editing[id] = true; });
+    el.addEventListener('blur', () => { setTimeout(() => { editing[id] = false; }, 400); });
+  });
+
+  // handlers for inputServoSelect
+  const inpServo = document.getElementById('inputServoSelect');
+  if (inpServo) {
+    inpServo.addEventListener('change', () => { editing['inputServoSelect'] = true; setTimeout(()=>{ editing['inputServoSelect'] = false; }, 600); });
+    inpServo.addEventListener('focus', ()=>{ editing['inputServoSelect'] = true; });
+    inpServo.addEventListener('blur', ()=>{ setTimeout(()=>{ editing['inputServoSelect'] = false; }, 400); });
+  }
+}
+
+/* Fetch general info (only update inputs not being edited) */
+async function ambil() {
+  try {
+    const r = await fetch('/info');
+    if (!r.ok) return;
+    const d = await r.json();
+
+    // readonly / status fields
+    document.getElementById('state').innerText = d.state || 'UNK';
+    // show remaining time when provided
+    const stimeEl = document.getElementById('state_time');
+    if (d.state_remaining !== undefined && d.state_duration !== undefined) {
+      const rem = parseInt(d.state_remaining);
+      const dur = parseInt(d.state_duration);
+      if (rem > 0 && dur > 0) {
+        stimeEl.innerText = 'Sisa: ' + rem + ' s / ' + dur + ' s';
+      } else {
+        if (d.state_elapsed !== undefined && d.state_elapsed > 0 && dur > 0) stimeEl.innerText = 'Elapsed: ' + parseInt(d.state_elapsed) + ' s';
+        else stimeEl.innerText = '';
+      }
+    } else {
+      if (stimeEl) stimeEl.innerText = '';
+    }
+
     document.getElementById('buzzer').innerText = d.buzzer ? 'ON':'OFF';
     document.getElementById('wireless').innerText = d.wireless ? 'ON':'OFF';
-    document.getElementById('inputServoSelect').value = d.inputServo;
-    document.getElementById('activeServo').innerText = d.inputServo == 1 ? 'Servo 1' : 'Servo 3';
-    if (d.inputServoSpeedClose !== undefined) document.getElementById('inputSpeedClose').value = d.inputServoSpeedClose;
-    if (d.inputServoSpeedOpen !== undefined) document.getElementById('inputSpeedOpen').value = d.inputServoSpeedOpen;
+    if (d.inputServo !== undefined) {
+      if (!editing['inputServoSelect']) document.getElementById('inputServoSelect').value = d.inputServo;
+    }
+    // sensors & display
+    if (d.temperature !== undefined) {
+      document.getElementById('temp').innerText = parseFloat(d.temperature).toFixed(2);
+      const disp = document.getElementById('dispTempOffset');
+      if (disp) disp.innerText = (d.tempOffset !== undefined) ? parseFloat(d.tempOffset).toFixed(2) : '--';
+      const el = document.getElementById('tempOffset');
+      if (el && !editing['tempOffset'] && document.activeElement !== el) el.value = (d.tempOffset !== undefined) ? parseFloat(d.tempOffset).toFixed(2) : '';
+    }
+    if (d.flowrate !== undefined) {
+      document.getElementById('flow').innerText = parseFloat(d.flowrate).toFixed(2);
+      const disp = document.getElementById('dispPPL');
+      if (disp) disp.innerText = (d.flowPPL !== undefined) ? parseFloat(d.flowPPL).toFixed(0) : '--';
+      const el = document.getElementById('flowPPL');
+      if (el && !editing['flowPPL'] && document.activeElement !== el) el.value = (d.flowPPL !== undefined) ? parseFloat(d.flowPPL).toFixed(0) : '';
+    }
+    if (d.volume_l !== undefined) {
+      const elMain = document.getElementById('volume');
+      if (elMain) elMain.innerText = parseFloat(d.volume_l).toFixed(2);
+      const elCal = document.getElementById('volume_cal');
+      if (elCal) elCal.innerText = parseFloat(d.volume_l).toFixed(2);
+      const sysVol = document.getElementById('sys_volume');
+      if (sysVol) sysVol.innerText = parseFloat(d.volume_l).toFixed(2);
+    }
+
+    // durations: only update if not being edited
+    if (d.KLIRING !== undefined && !editing['kliring']) document.getElementById('kliring').value = d.KLIRING;
+    if (d.TUNGGU !== undefined  && !editing['tunggu'])  document.getElementById('tunggu').value  = d.TUNGGU;
+    if (d.KALIBRASI !== undefined && !editing['kalibrasi']) document.getElementById('kalibrasi').value = d.KALIBRASI;
+    if (d.STABIL !== undefined   && !editing['stabil'])   document.getElementById('stabil').value   = d.STABIL;
+
+    // update the combined duration info display
+    const di = document.getElementById('dur_info');
+    if (di && (d.KLIRING !== undefined || d.TUNGGU !== undefined || d.KALIBRASI !== undefined || d.STABIL !== undefined)) {
+      const k = (d.KLIRING !== undefined) ? d.KLIRING : '--';
+      const t = (d.TUNGGU !== undefined) ? d.TUNGGU : '--';
+      const ka = (d.KALIBRASI !== undefined) ? d.KALIBRASI : '--';
+      const s = (d.STABIL !== undefined) ? d.STABIL : '--';
+      di.innerText = `KLIRING: ${k} s, TUNGGU: ${t} s, KALIBRASI: ${ka} s, STABIL: ${s} s`;
+    }
+
+    // input speeds: only if not editing
+    if (d.inputServoSpeedClose !== undefined && !editing['inputSpeedClose']) {
+      const el = document.getElementById('inputSpeedClose');
+      if (el && document.activeElement !== el) el.value = d.inputServoSpeedClose;
+      const sc = document.getElementById('sys_spd_c');
+      if (sc) sc.innerText = (d.inputServoSpeedClose !== undefined) ? d.inputServoSpeedClose + ' s' : '-';
+    }
+    if (d.inputServoSpeedOpen !== undefined && !editing['inputSpeedOpen']) {
+      const el = document.getElementById('inputSpeedOpen');
+      if (el && document.activeElement !== el) el.value = d.inputServoSpeedOpen;
+      const so = document.getElementById('sys_spd_o');
+      if (so) so.innerText = (d.inputServoSpeedOpen !== undefined) ? d.inputServoSpeedOpen + ' s' : '-';
+    }
+
+    // system card items
+    const hostEl = document.getElementById('sys_host');
+    const ipEl = document.getElementById('sys_ip');
+    if (hostEl) hostEl.innerText = window.location.hostname || '-';
+    if (ipEl) ipEl.innerText = window.location.hostname || '-'; // hostname typically shows IP or host
+    const sb = document.getElementById('sys_buzzer');
+    if (sb) sb.innerText = d.buzzer ? 'ON' : 'OFF';
+    const sw = document.getElementById('sys_wireless');
+    if (sw) sw.innerText = d.wireless ? 'ON' : 'OFF';
+    const sis = document.getElementById('sys_inputservo');
+    if (sis) sis.innerText = d.inputServo !== undefined ? d.inputServo : '-';
+
+  } catch (e) {
+    console.log('ambil err', e);
+  }
+}
+
+/* SSE client: listen for calibration broadcasts so Web UI remains sync with TFT saves */
+if (!!window.EventSource) {
+  const es = new EventSource('/events');
+  es.addEventListener('calib', function(evt) {
+    try {
+      const d = JSON.parse(evt.data);
+      if (d.tempOffset !== undefined) {
+        const disp = document.getElementById('dispTempOffset');
+        if (disp) disp.innerText = parseFloat(d.tempOffset).toFixed(2);
+        const tempInput = document.getElementById('tempOffset');
+        if (tempInput && document.activeElement !== tempInput) tempInput.value = parseFloat(d.tempOffset).toFixed(2);
+      }
+      if (d.flowPPL !== undefined) {
+        const disp = document.getElementById('dispPPL');
+        if (disp) disp.innerText = parseFloat(d.flowPPL).toFixed(0);
+        const flowInput = document.getElementById('flowPPL');
+        if (flowInput && document.activeElement !== flowInput) flowInput.value = parseFloat(d.flowPPL).toFixed(0);
+      }
+    } catch (e) {
+      console.warn('SSE calib parse error', e);
+    }
   });
+  es.onerror = function(e) { console.log('SSE connection error', e); };
 }
-function aksi(act) {
-  fetch('/state?set='+act).then(ambil);
+
+/* Optional smaller sensor-only fetch */
+async function ambilSensors() {
+  try {
+    const r = await fetch('/sensors');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (d.temperature !== undefined) document.getElementById('temp').innerText = parseFloat(d.temperature).toFixed(2);
+    if (d.flowrate !== undefined) document.getElementById('flow').innerText = parseFloat(d.flowrate).toFixed(2);
+    if (d.volume_l !== undefined) {
+      const elMain = document.getElementById('volume');
+      if (elMain) elMain.innerText = parseFloat(d.volume_l).toFixed(2);
+      const elCal = document.getElementById('volume_cal');
+      if (elCal) elCal.innerText = parseFloat(d.volume_l).toFixed(2);
+      const sysVol = document.getElementById('sys_volume');
+      if (sysVol) sysVol.innerText = parseFloat(d.volume_l).toFixed(2);
+    }
+  } catch(e) { console.log('ambilSensors err', e); }
 }
+
+/* Controls */
+function aksi(act) { fetch('/state?set='+act).then(ambil); }
 function kirimData() {
   let k=document.getElementById('kliring').value;
   let t=document.getElementById('tunggu').value;
@@ -121,20 +610,16 @@ function kirimData() {
   fetch(`/set?KLIRING=${k}&TUNGGU=${t}&KALIBRASI=${ka}&STABIL=${s}`).then(ambil);
   return false;
 }
-function toggleBuzzer() {
-  fetch('/buzzer?toggle=1').then(ambil);
-}
-function toggleWireless() {
-  fetch('/wireless?toggle=1').then(ambil);
-}
+function toggleBuzzer() { fetch('/buzzer?toggle=1').then(ambil); }
+function toggleWireless() { fetch('/wireless?toggle=1').then(ambil); }
 function ambilServo() {
   fetch("/servo").then(r=>r.json()).then(d=>{
-    document.getElementById('s1c').value = d.S1_CLOSE;
-    document.getElementById('s1o').value = d.S1_OPEN;
-    document.getElementById('s2c').value = d.S2_CLOSE;
-    document.getElementById('s2o').value = d.S2_OPEN;
-    document.getElementById('s3c').value = d.S3_CLOSE;
-    document.getElementById('s3o').value = d.S3_OPEN;
+    if (d.S1_CLOSE !== undefined) document.getElementById('s1c').value = d.S1_CLOSE;
+    if (d.S1_OPEN  !== undefined) document.getElementById('s1o').value = d.S1_OPEN;
+    if (d.S2_CLOSE !== undefined) document.getElementById('s2c').value = d.S2_CLOSE;
+    if (d.S2_OPEN  !== undefined) document.getElementById('s2o').value = d.S2_OPEN;
+    if (d.S3_CLOSE !== undefined) document.getElementById('s3c').value = d.S3_CLOSE;
+    if (d.S3_OPEN  !== undefined) document.getElementById('s3o').value = d.S3_OPEN;
   });
 }
 function setServo() {
@@ -146,44 +631,93 @@ function setServo() {
   let s3o = document.getElementById('s3o').value;
   fetch(`/servo?s1c=${s1c}&s1o=${s1o}&s2c=${s2c}&s2o=${s2o}&s3c=${s3c}&s3o=${s3o}`).then(ambilServo);
 }
-function setInputServo() {
-  let val = document.getElementById('inputServoSelect').value;
-  fetch(`/inputservo?set=${val}`).then(ambil);
+
+/* TEST SERVO: fallback behavior included */
+async function testServo(id, mode) {
+  try {
+    let setFieldId = "";
+    if (id === 1) setFieldId = (mode === 'c') ? 's1c' : 's1o';
+    else if (id === 2) setFieldId = (mode === 'c') ? 's2c' : 's2o';
+    else if (id === 3) setFieldId = (mode === 'c') ? 's3c' : 's3o';
+
+    let posVal = "";
+    const setEl = document.getElementById(setFieldId);
+    if (setEl && setEl.value !== "") posVal = setEl.value;
+
+    if (posVal === "" || posVal === undefined || posVal === null) {
+      try {
+        const r = await fetch('/servo');
+        if (r.ok) {
+          const d = await r.json();
+          if (id === 1) posVal = (mode === 'c') ? d.S1_CLOSE : d.S1_OPEN;
+          else if (id === 2) posVal = (mode === 'c') ? d.S2_CLOSE : d.S2_OPEN;
+          else if (id === 3) posVal = (mode === 'c') ? d.S3_CLOSE : d.S3_OPEN;
+        }
+      } catch (err) {
+        console.warn('Gagal ambil /servo fallback:', err);
+      }
+    }
+
+    if (posVal !== "" && posVal !== undefined && posVal !== null) {
+      let pnum = parseInt(posVal);
+      if (isNaN(pnum)) { alert('Nilai posisi tidak valid'); return; }
+      if (pnum < 0) pnum = 0; if (pnum > 180) pnum = 180;
+      fetch(`/testservo?id=${id}&pos=${pnum}`).catch(e=>console.warn('testservo err',e));
+    } else {
+      alert('Tidak ada nilai posisi: isi "Set Sudut Servo" terlebih dahulu atau simpan konfigurasi servo.');
+    }
+  } catch (e) {
+    console.error('testServo error', e);
+  }
 }
-function testServo(id, pos) {
-  fetch(`/testservo?id=${id}&pos=${pos}`);
+
+function setInputServo() {
+  const el = document.getElementById('inputServoSelect');
+  if (!el) return;
+  const val = el.value;
+  editing['inputServoSelect'] = true;
+  fetch(`/inputservo?set=${val}`)
+    .then(()=> { setTimeout(()=>{ editing['inputServoSelect'] = false; ambil(); }, 300); })
+    .catch((e) => { console.warn('setInputServo err', e); setTimeout(()=>{ editing['inputServoSelect'] = false; }, 300); });
 }
 function setInputServoSpeed() {
   let vc = parseFloat(document.getElementById('inputSpeedClose').value);
   let vo = parseFloat(document.getElementById('inputSpeedOpen').value);
-  if (!isNaN(vc)) {
-    if (vc < 0.2) vc = 0.2;
-    if (vc > 5) vc = 5;
-    fetch(`/inputservospeed?setClose=${vc}`);
-  }
-  if (!isNaN(vo)) {
-    if (vo < 0.2) vo = 0.2;
-    if (vo > 5) vo = 5;
-    fetch(`/inputservospeed?setOpen=${vo}`).then(ambil);
-  } else {
-    ambil();
-  }
+  if (!isNaN(vc)) { if (vc < 0.2) vc = 0.2; if (vc > 5) vc = 5; fetch(`/inputservospeed?setClose=${vc}`); }
+  if (!isNaN(vo)) { if (vo < 0.2) vo = 0.2; if (vo > 5) vo = 5; fetch(`/inputservospeed?setOpen=${vo}`).then(ambil); } else { ambil(); }
 }
-function resetEEPROM() {
-  if(confirm("Yakin reset semua data?")) fetch("/reset").then(()=>{ambil();ambilServo();});
+function resetEEPROM() { if(confirm("Yakin reset semua data?")) fetch("/reset").then(()=>{ambil();ambilServo();}); }
+function rebootDevice() { if(confirm("Yakin ingin me-reboot device sekarang?")) { fetch("/reboot").then(()=>{ alert("Perintah reboot dikirim. Perangkat akan melakukan restart."); }); } }
+function calTemp() {
+  let v = parseFloat(document.getElementById('tempOffset').value);
+  if (isNaN(v)) { alert("Masukkan angka valid"); return; }
+  fetch(`/calibrate_temp?offset=${v}`).then(ambil);
 }
-function rebootDevice() {
-  if(confirm("Yakin ingin me-reboot device sekarang?")) {
-    fetch("/reboot").then(()=>{ alert("Perintah reboot dikirim. Perangkat akan melakukan restart."); });
-  }
+function calFlow() {
+  let v = parseFloat(document.getElementById('flowPPL').value);
+  if (isNaN(v) || v <= 0) { alert("Masukkan pulses-per-liter valid (angka positif)"); return; }
+  fetch(`/calibrate_flow?ppl=${v}`).then(ambil);
 }
-function masukTestServoMenu() {
-  fetch("/testservomenu")
-    .then(r => {
-      if (r.status == 200) {
-        alert("Masuk menu Test Servo.");
-      } else {
-        alert("Menu Test Servo hanya bisa diakses saat mesin SIAP UJI.");
-      }
-    });
+function resetVolume() {
+  if (!confirm("Reset total volume ke 0 L?")) return;
+  fetch('/reset_volume').then(()=>{ ambil(); ambilSensors(); alert("Volume di-reset."); });
 }
+
+/* Moved Reset & Reboot confirm wrappers */
+function confirmResetEEPROM() {
+  if (!confirm("Yakin reset semua data ke default?")) return;
+  fetch("/reset").then(()=>{ alert("Reset EEPROM: selesai. Memuat ulang data..."); ambil(); ambilServo(); });
+}
+function confirmReboot() {
+  if (!confirm("Yakin ingin me-reboot device sekarang?")) return;
+  fetch("/reboot").then(()=>{ alert("Perintah reboot dikirim. Perangkat akan melakukan restart."); });
+}
+
+/* initial setup: attach handlers, load current values and start polling */
+attachEditingHandlers();
+ambil();
+ambilServo();
+setInterval(ambil, POLL_MS);
+</script>
+</body>
+</html>
