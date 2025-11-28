@@ -20,6 +20,9 @@ TestBench Portable dikembangkan sebagai solusi sederhana dan portabel untuk mela
 - Simpan pengaturan di EEPROM (durasi, buzzer, posisi servo, wireless, servo input, kecepatan input).
 - Endpoint HTTP API untuk integrasi / automasi.
 - Konfirmasi sebelum operasi destruktif (Reset EEPROM, Reboot).
+- Realtime kondisi suhu air.                   <-- added for DS18b20
+- Realtime Flowmeter (L/jam).                  <-- added for FS300A
+- Update OTA dengan arduino IDEArduinoOTA.h    <-- added for OTA
 
 ---
 
@@ -31,6 +34,8 @@ TestBench Portable dikembangkan sebagai solusi sederhana dan portabel untuk mela
 - 2 x LED indikator (LED1, LED2)
 - Buzzer
 - 2 x tombol fisik (BUTTON_A, BUTTON_B)
+- Sensor suhu DS18b20    <-- (UPDATE) tambahkan resistor 4,7K vcc ke pin sensor suhu
+- Flowmeter FS300A       <-- (UPDATE)
 - Wiring sesuai pin di source (lihat bagian Wiring)
 
 Pin default (sesuaikan di kode jika berbeda):
@@ -38,11 +43,13 @@ Pin default (sesuaikan di kode jika berbeda):
 - BUTTON_B_PIN = GPIO5
 - LED1_PIN = GPIO16
 - LED2_PIN = GPIO17
-- SERVO1_PIN = GPIO12
+- SERVO1_PIN = GPIO33
 - SERVO2_PIN = GPIO13
 - SERVO3_PIN = GPIO14
 - BUZZER_PIN = GPIO27
 - TOUCH_CS = GPIO35, TOUCH_IRQ = GPIO34, TOUCH_CLK = GPIO25, TOUCH_DOUT = GPIO26 (MISO), TOUCH_DIN = GPIO32 (MOSI)
+- DS18_PIN   = 22     <-- (UPDATE)
+- FLOW_PIN   = 21     <-- (UPDATE)
 
 ---
 
@@ -126,17 +133,6 @@ Di bawah ini terdapat diagram wiring sederhana yang menunjukkan koneksi utama an
 - Tombol: gunakan INPUT_PULLUP pada GPIO4 dan GPIO5 (tekan ke GND).
 - LED dan buzzer: hubungkan melalui resistor/driver sesuai kebutuhan (jangan langsung hubungkan LED ke pin tanpa resistor).
 
-Jika Anda ingin file gambar terpisah:
-- Tambahkan file `wiring.png` (raster) atau `wiring.svg` (vektor) ke root repository.
-- Untuk menampilkan file tersebut di README, gunakan sintaks berikut:
-  ```markdown
-  ![Wiring Diagram](./wiring.png)
-  ```
-  atau untuk SVG:
-  ```markdown
-  ![Wiring Diagram](./wiring.svg)
-  ```
-
 ---
 
 ## Persiapan software / library
@@ -148,6 +144,9 @@ Pastikan menginstal library berikut di Arduino IDE atau PlatformIO:
 - ESPAsyncWebServer (plus AsyncTCP/ESPAsyncTCP jika perlu)
 - SPI
 - WiFi (bawaan ESP32)
+- OneWire               <-- (DS18b20)
+- DallasTemperature     <-- (FS300A)
+- ArduinoOTA            <-- (IDEArduinoOTA)
 
 Build/Upload:
 - Buka file `.ino` (contoh: `webUiTestbench_UPDATE.ino`) di Arduino IDE, pilih board ESP32 yang sesuai, lalu upload.
@@ -166,6 +165,8 @@ Web UI sudah disediakan sebagai string PROGMEM `index_html` di file .ino. Web UI
 - Set kecepatan servo input (CLOSE->OPEN, OPEN->CLOSE) dalam detik
 - Reset EEPROM (dengan konfirmasi)
 - Reboot Device (dengan konfirmasi)
+- Realtime suhu air dan kalibrasi offset suhu        <-- (DS18b20)
+- Realtime flowmeter dan kalibrasi pulse flowmeter    <-- (FS300A)
 
 Jika Anda ingin menyimpan file web terpisah (index.html), Anda dapat menaruhnya di server http_static atau mengubah .ino untuk membaca file dari SPIFFS/LittleFS — saat ini web UI ter-embed di PROGMEM.
 
