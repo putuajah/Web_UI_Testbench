@@ -24,8 +24,8 @@ TestBench Portable dikembangkan sebagai solusi sederhana dan portabel untuk mela
 
 ## ⚙️ Persyaratan Perangkat Keras
 - ESP32 (board : ESP32 DevKit)
-- Layar TFT 2.4" (TFT_eSPI)
-- Touch controller XPT2046 (touch SPI custom)
+- Layar TFT 2.4" (TFT_eSPI)                     <-- ili9431 2.4" 240x320 + touchscreen
+- Touch controller XPT2046 (touch SPI custom)   <-- ili9431 2.4" 240x320 + touchscreen
 - 3 x Servo (servo1, servo2, servo3)    <-- servo tower pro MG996R METAL GEAR
 - 2 x LED indikator (LED1, LED2)
 - Buzzer
