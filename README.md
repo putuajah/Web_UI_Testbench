@@ -18,19 +18,19 @@ TestBench Portable dikembangkan sebagai solusi sederhana dan portabel untuk mela
 - Simpan pengaturan di EEPROM (durasi, buzzer, posisi servo, wireless, servo input, kecepatan input).
 - Endpoint HTTP API untuk integrasi / automasi.
 - Konfirmasi sebelum operasi destruktif (Reset EEPROM, Reboot).
-- Realtime kondisi suhu air.                   <-- added for DS18b20
+- Realtime kondisi suhu air.                   <-- added for DS18b2
 - Realtime Flowmeter (L/jam).                  <-- added for FS300A
 - Update OTA dengan arduino IDEArduinoOTA.h    <-- added for OTA
 
 ## ⚙️ Persyaratan Perangkat Keras
-- ESP32 (board apa pun yang kompatibel, contoh: ESP32 DevKit)
+- ESP32 (board : ESP32 DevKit)
 - Layar TFT 2.4" (TFT_eSPI)
 - Touch controller XPT2046 (touch SPI custom)
-- 3 x Servo (servo1, servo2, servo3)
+- 3 x Servo (servo1, servo2, servo3)    <-- servo tower pro MG996R METAL GEAR
 - 2 x LED indikator (LED1, LED2)
 - Buzzer
 - 2 x tombol fisik (BUTTON_A, BUTTON_B)
-- Sensor suhu DS18b20    <-- (UPDATE) tambahkan resistor 4,7K vcc ke pin sensor suhu
+- Sensor suhu DS18b20    <-- (UPDATE)
 - Flowmeter FS300A       <-- (UPDATE)
 - Wiring sesuai pin di source (lihat bagian Wiring)
   
@@ -44,7 +44,7 @@ TestBench Portable dikembangkan sebagai solusi sederhana dan portabel untuk mela
 - SERVO3_PIN = GPIO14
 - BUZZER_PIN = GPIO27
 - TOUCH_CS = GPIO35, TOUCH_IRQ = GPIO34, TOUCH_CLK = GPIO25, TOUCH_DOUT = GPIO26 (MISO), TOUCH_DIN = GPIO32 (MOSI)
-- DS18_PIN   = 22     <-- (UPDATE)
+- DS18_PIN   = 22     <-- (UPDATE) tambahkan resistor 4,7K vcc ke pin sensor suhu
 - FLOW_PIN   = 21     <-- (UPDATE)
 
 ## 🧩 Library yang Diperlukan
@@ -57,7 +57,7 @@ Pastikan library berikut sudah terinstal di Arduino IDE:
 - SPI
 - WiFi (bawaan ESP32)
 - OneWire               <-- (DS18b20)
-- DallasTemperature     <-- (FS300A)
+- DallasTemperature     <-- (DS18b20)
 - ArduinoOTA            <-- (IDEArduinoOTA)
 
 ## 🚀 Cara Upload via usb
